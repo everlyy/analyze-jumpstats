@@ -7,3 +7,8 @@ Code is pretty bad because I made this really quick.
 # How To Use
 
 Put all your jumpstat CSV files in a folder called `stats` and then just run the program. 
+
+# Screenshot
+
+![Terminal Output](screenshots/terminal-output.png) \
+<sup>(Ignore the bad stats I was having trouble..)</sup>
