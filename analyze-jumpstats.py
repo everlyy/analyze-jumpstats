@@ -150,7 +150,7 @@ if __name__ == "__main__":
 	print()
 	print(f"longest jump: {strstat(longest_jump)}")
 	print(f"shortest jump: {strstat(shortest_jump)}")
-	print(f"average distance: {get_distance_color(average_distance)}{round(average_distance, 3)}{COL_RESET} units")
+	print(f"average distance: {get_distance_color(average_distance)}{round(average_distance, 3)} units{COL_RESET}")
 	print()
 
 	print(f"most common distances jumped:")
