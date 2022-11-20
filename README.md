@@ -22,7 +22,7 @@ Then in Discord you can do `/analyze_jumpstats` and attach a CSV file with your 
 # Screenshots
 
 ### Terminal Output
-![Terminal Output](screenshots/terminal-output.png) \
+![Terminal Output](screenshots/terminal-output.png)
 
 ### Discord Bot
 ![Discord Bot](screenshots/discord-bot.png)
