@@ -56,7 +56,7 @@ async def analyze_jumpstats(interaction, stats_file: discord.Attachment):
 
 	embed = discord.Embed(
 		title="Jumpstats",
-		description=f"Loaded {len(stats)} stats from {stats_file.filename}"
+		description=f"Loaded {len(stats)} stats from `{stats_file.filename}`"
 	)
 
 	embed.set_author(name="everlyy/analyze-jumpstats", url="https://github.com/everlyy/analyze-jumpstats")
@@ -70,7 +70,7 @@ async def analyze_jumpstats(interaction, stats_file: discord.Attachment):
 
 	embed.add_field(name="Longest Jump", value=f"`{strstat(longest_jump)}`", inline=False)
 	embed.add_field(name="Shortest Jump", value=f"`{strstat(shortest_jump)}`", inline=False)
-	embed.add_field(name="Average Distance", value=f"`{round(average_distance, 3)}`", inline=False)
+	embed.add_field(name="Average Distance", value=f"`{round(average_distance, 3)} units`", inline=False)
 
 
 	common_distances_msg = "```"
