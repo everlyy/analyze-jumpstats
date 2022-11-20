@@ -2,7 +2,6 @@
 
 Quick script I made to analyze your jumpstats from a CSV file. \
 Best to use with [CSGO Telnet jumpstats example](https://github.com/everlyy/csgo-telnet/blob/main/examples/jumpstats.py). \
-Code is pretty bad because I made this really quick.
 
 # How To Use
 
