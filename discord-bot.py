@@ -59,6 +59,8 @@ async def analyze_jumpstats(interaction, stats_file: discord.Attachment):
 		description=f"Loaded {len(stats)} stats from {stats_file.filename}"
 	)
 
+	embed.set_author(name="everlyy/analyze-jumpstats", url="https://github.com/everlyy/analyze-jumpstats")
+
 	jumps_over_msg = "```"
 	for jump_over in jumps_over:
 		percent = round((jumps_over[jump_over] / len(stats)) * 100, 2)
