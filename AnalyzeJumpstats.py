@@ -148,8 +148,8 @@ if __name__ == "__main__":
 		print(f"{get_distance_color(int(jump_over))}{jump_over:>8}{COL_RESET}: {jumps_over[jump_over]:<4} | {percent}%")
 
 	print()
-	print(f"longest jump: {strstat(longest_jump)}")
-	print(f"shortest jump: {strstat(shortest_jump)}")
+	print(f"longest jump: {strstat(longest_jump)} ({format_timestamp(longest_jump.time)})")
+	print(f"shortest jump: {strstat(shortest_jump)} ({format_timestamp(shortest_jump.time)})")
 	print(f"average distance: {get_distance_color(average_distance)}{round(average_distance, 3)} units{COL_RESET}")
 	print()
 
