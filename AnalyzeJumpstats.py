@@ -117,6 +117,18 @@ def get_jumps_over(stats):
 			jumps_over["265"] += 1
 	return jumps_over
 
+def get_active_hours(stats):
+	active_hours = {}
+	for stat in stats:
+		#                                                I blame windows for this shit
+		#                                                             V
+		hour = datetime.fromtimestamp(stat.time).strftime("%I %p").lstrip("0")
+		if hour in active_hours:
+			active_hours[hour] += 1
+		else:
+			active_hours[hour] = 1
+	return list(reversed(sorted(active_hours.items(), key=lambda x:x[1])))
+
 def format_timestamp(timestamp):
 	return datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M:%S")
 
@@ -132,6 +144,7 @@ if __name__ == "__main__":
 	print(f"Got {len(all_stats)} stat(s) from {len(stat_files)} file(s)")
 
 	start_time, end_time = get_timespan(all_stats)
+	active_hours = get_active_hours(all_stats)
 	jumps_over = get_jumps_over(all_stats)
 	longest_jump = get_longest_jump(all_stats)
 	shortest_jump = get_shortest_jump(all_stats)
@@ -140,6 +153,11 @@ if __name__ == "__main__":
 	common_strafes = get_common_strafes(all_stats)
 
 	print(f"Jumpstats from {COL_BOLD}{format_timestamp(start_time)}{COL_RESET} to {COL_BOLD}{format_timestamp(end_time)}{COL_RESET}")
+	print()
+	print(f"active hours:")
+	for active_hour in active_hours[0:5]:
+		hour = f"{str(active_hour[0])}"
+		print(f"{hour:>8}: {active_hour[1]} jumps")
 	print()
 
 	print(f"jumps over:")
