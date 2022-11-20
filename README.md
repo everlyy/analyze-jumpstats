@@ -17,6 +17,8 @@ Make sure to install `discord` from pip.
 Copy `config.def.py` to `config.py` and put your bot's token in there. \
 Then just run `discord-bot.py`.
 
+Then in Discord you can do `/analyze_jumpstats` and attach a CSV file with your jumpstats, and you'll see an embed with your stats summarized.
+
 # Screenshots
 
 ### Terminal Output
