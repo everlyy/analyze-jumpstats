@@ -1,0 +1,2 @@
+DISCORD_TOKEN = "TOKEN HERE"
+MAX_FILE_SIZE = 10 * 1024 * 1024 # Limit files to 10 MiB for now

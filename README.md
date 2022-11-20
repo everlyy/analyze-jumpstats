@@ -6,9 +6,22 @@ Code is pretty bad because I made this really quick.
 
 # How To Use
 
+### Local Program
+
 Put all your jumpstat CSV files in a folder called `stats` and then just run the program. 
 
-# Screenshot
+### Discord Bot
 
+Make sure to install `discord` from pip.
+
+Copy `config.def.py` to `config.py` and put your bot's token in there. \
+Then just run `discord-bot.py`.
+
+# Screenshots
+
+### Terminal Output
 ![Terminal Output](screenshots/terminal-output.png) \
 <sup>(Ignore the bad stats I was having trouble..)</sup>
+
+### Discord Bot
+![Discord Bot](screenshots/discord-bot.png)
