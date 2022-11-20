@@ -8,7 +8,7 @@ Code is pretty bad because I made this really quick.
 
 ### Local Program
 
-Put all your jumpstat CSV files in a folder called `stats` and then just run the program. 
+Put all your jumpstat CSV files in a folder called `stats` and then just run `AnalyzeJumpstats.py`. 
 
 ### Discord Bot
 
