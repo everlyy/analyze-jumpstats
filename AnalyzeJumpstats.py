@@ -129,6 +129,16 @@ def get_active_hours(stats):
 			active_hours[hour] = 1
 	return list(reversed(sorted(active_hours.items(), key=lambda x:x[1])))
 
+def get_active_days(stats):
+	active_days = {}
+	for stat in stats:
+		day = datetime.fromtimestamp(stat.time).strftime("%a").lower()
+		if day in active_days:
+			active_days[day] += 1
+		else:
+			active_days[day] = 1
+	return list(reversed(sorted(active_days.items(), key=lambda x:x[1])))
+
 def format_timestamp(timestamp):
 	return datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M:%S")
 
@@ -145,6 +155,7 @@ if __name__ == "__main__":
 
 	start_time, end_time = get_timespan(all_stats)
 	active_hours = get_active_hours(all_stats)
+	active_days = get_active_days(all_stats)
 	jumps_over = get_jumps_over(all_stats)
 	longest_jump = get_longest_jump(all_stats)
 	shortest_jump = get_shortest_jump(all_stats)
@@ -154,18 +165,23 @@ if __name__ == "__main__":
 
 	print(f"Jumpstats from {COL_BOLD}{format_timestamp(start_time)}{COL_RESET} to {COL_BOLD}{format_timestamp(end_time)}{COL_RESET}")
 	print()
+
 	print(f"active hours:")
 	for active_hour in active_hours[0:5]:
-		hour = f"{str(active_hour[0])}"
-		print(f"{hour:>8}: {active_hour[1]} jumps")
+		print(f"{active_hour[0]:>8}: {active_hour[1]} jumps")
+	print()
+
+	print(f"active days:")
+	for active_day in active_days[0:5]:
+		print(f"{active_day[0]:>8}: {active_day[1]} jumps")
 	print()
 
 	print(f"jumps over:")
 	for jump_over in jumps_over:
 		percent = round((jumps_over[jump_over] / len(all_stats)) * 100, 2)
 		print(f"{get_distance_color(int(jump_over))}{jump_over:>8}{COL_RESET}: {jumps_over[jump_over]:<4} | {percent}%")
-
 	print()
+	
 	print(f"longest jump: {strstat(longest_jump)} ({format_timestamp(longest_jump.time)})")
 	print(f"shortest jump: {strstat(shortest_jump)} ({format_timestamp(shortest_jump.time)})")
 	print(f"average distance: {get_distance_color(average_distance)}{round(average_distance, 3)} units{COL_RESET}")
