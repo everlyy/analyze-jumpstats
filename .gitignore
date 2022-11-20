@@ -1,1 +1,3 @@
 stats/
+config.py
+__pycache__/
