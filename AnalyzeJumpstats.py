@@ -52,7 +52,7 @@ def read_stats(fp):
 	return stats
 
 def strstat(stat):
-	return f"{get_distance_color(stat.distance)}{round(stat.distance, 2)} units ({stat.strafes} strafes @ {stat.sync}% sync){COL_RESET}"
+	return f"{get_distance_color(stat.distance)}{round(stat.distance, 2)} units ({stat.strafes} strafes | {stat.sync}% sync | {stat.pre} pre | {stat.max_vel} max){COL_RESET}"
 
 def get_longest_jump(stats):
 	longest = Longjump(0, 0, 0, 0, 0, 0, 0, False, False)
