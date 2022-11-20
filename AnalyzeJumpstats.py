@@ -42,14 +42,13 @@ def get_stat_files(directory):
 
 	return stat_files
 
-def read_stats(filename):
+def read_stats(fp):
 	stats = []
-	with open(filename, "r") as file:
-		reader = csv.reader(file)
-		next(reader)
-		for row in reader:
-			time, distance, strafes, pre, max_vel, height, sync, crouch, min_forward = row
-			stats.append(Longjump(int(time), float(distance), int(strafes), float(pre), int(max_vel), float(height), int(sync), crouch == "yes", min_forward == "yes"))
+	reader = csv.reader(fp)
+	next(reader)
+	for row in reader:
+		time, distance, strafes, pre, max_vel, height, sync, crouch, min_forward = row
+		stats.append(Longjump(int(time), float(distance), int(strafes), float(pre), int(max_vel), float(height), int(sync), crouch == "yes", min_forward == "yes"))
 	return stats
 
 def strstat(stat):
@@ -126,9 +125,10 @@ if __name__ == "__main__":
 	stat_files = get_stat_files("stats/")
 	all_stats = []
 	for stat_file in stat_files:
-		stats = read_stats(stat_file)
-		for stat in stats:
-			all_stats.append(stat)
+		with open(stat_file, "r") as file:
+			stats = read_stats(file)
+			for stat in stats:
+				all_stats.append(stat)
 	print(f"Got {len(all_stats)} stat(s) from {len(stat_files)} file(s)")
 
 	start_time, end_time = get_timespan(all_stats)
