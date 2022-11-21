@@ -1,6 +1,7 @@
 import csv
 import os
 import sys
+import argparse
 from datetime import datetime, timedelta
 
 COL_RESET = "\033[0m"
@@ -156,9 +157,45 @@ def get_active_days(stats):
 def format_timestamp(timestamp):
 	return datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M:%S")
 
+def merge_stat_files(stat_files):
+	fields = ["time", "distance", "strafes", "pre", "max", "height", "sync", "crouchjump", "-forward"]
+	new_rows = []
+	for stat_file in stat_files:
+		with open(stat_file, "r") as file:
+			reader = csv.reader(file)
+			next(reader)
+			for row in reader:
+				new_rows.append(row)
+
+	print(f"Read {len(new_rows)} rows from {len(stat_files)} files.")
+	print(f"Merging all into one file...")
+
+	with open("merged.csv", "w") as file:
+		writer = csv.writer(file)
+		writer.writerow(fields)
+		for row in new_rows:
+			writer.writerow(row)
+
+	print(f"Merge complete.")
+
 if __name__ == "__main__":
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-d", "--stats-directory", help="Choose different stats directory", dest="stats_directory")
+	parser.add_argument("-m", "--merge", help="Merge all stat files into one", action="store_true", dest="merge")
+	args = parser.parse_args()
+
+	stats_directory = "stats/"
+	if args.stats_directory is not None:
+		stats_directory = args.stats_directory
+
 	print(f"Collecting stats...")
-	stat_files = get_stat_files("stats/")
+	stat_files = get_stat_files(stats_directory)
+
+	if args.merge:
+		print(f"Merging {len(stat_files)} files...")
+		merge_stat_files(stat_files)
+		sys.exit(0)
+
 	all_stats = []
 	for stat_file in stat_files:
 		with open(stat_file, "r") as file:
