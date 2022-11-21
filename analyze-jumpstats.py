@@ -170,7 +170,7 @@ def merge_stat_files(stat_files):
 	print(f"Read {len(new_rows)} rows from {len(stat_files)} files.")
 	print(f"Merging all into one file...")
 
-	with open("merged.csv", "w") as file:
+	with open("merged.csv", "w", newline='', encoding='utf-8') as file:
 		writer = csv.writer(file)
 		writer.writerow(fields)
 		for row in new_rows:
