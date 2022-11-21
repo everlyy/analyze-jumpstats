@@ -5,9 +5,9 @@ Best to use with [CSGO Telnet jumpstats example](https://github.com/everlyy/csgo
 
 # How To Use
 
-### Local Program
-
 Put all your jumpstat CSV files in a folder called `stats` and then just run `AnalyzeJumpstats.py`. 
+
+For help with command-line arguments, just run the program with `--help`.
 
 # Screenshot
 
