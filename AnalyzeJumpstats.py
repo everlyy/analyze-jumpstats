@@ -7,7 +7,7 @@ COL_RESET = "\033[0m"
 COL_BLUE = "\033[34m"
 COL_GREEN = "\033[32m"
 COL_RED = "\033[31m"
-COL_GOLD = "\033[33m"
+COL_GOLD = "\033[93m"
 COL_BOLD = "\033[1m"
 
 class Longjump:
