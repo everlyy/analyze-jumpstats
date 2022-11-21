@@ -1,5 +1,6 @@
 import csv
 import os
+import sys
 from datetime import datetime
 
 COL_RESET = "\033[0m"
@@ -152,6 +153,11 @@ if __name__ == "__main__":
 			for stat in stats:
 				all_stats.append(stat)
 	print(f"Got {len(all_stats)} stat(s) from {len(stat_files)} file(s)")
+
+	if len(all_stats) < 1:
+		print(f"No stats to analyze. Quitting.")
+		sys.exit(0)
+
 
 	start_time, end_time = get_timespan(all_stats)
 	active_hours = get_active_hours(all_stats)
