@@ -1,7 +1,7 @@
 import csv
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 COL_RESET = "\033[0m"
 COL_BLUE = "\033[34m"
@@ -58,12 +58,22 @@ def read_stats(fp):
 def strstat(stat):
 	return f"{get_distance_color(stat.distance)}{round(stat.distance, 3)} units ({stat.strafes} strafes | {stat.sync}% sync | {stat.pre} pre | {stat.max_vel} max){COL_RESET}"
 
-def get_longest_jump(stats):
-	longest = Longjump(0, 0, 0, 0, 0, 0, 0, False, False)
+def get_longest_jumps(stats):
+	longest_jumps = { "all": Longjump.init_empty(), "month": Longjump.init_empty(), "week": Longjump.init_empty() }
+	time_month_ago = datetime.now() - timedelta(days=30)
+	time_week_ago = datetime.now() - timedelta(days=7)
+
 	for stat in stats:
-		if stat.distance > longest.distance:
-			longest = stat
-	return longest
+		if stat.distance > longest_jumps["all"].distance:
+			longest_jumps["all"] = stat
+
+		if datetime.fromtimestamp(stat.time) > time_month_ago and stat.distance > longest_jumps["month"].distance:
+			longest_jumps["month"] = stat
+
+		if datetime.fromtimestamp(stat.time) > time_week_ago and stat.distance > longest_jumps["week"].distance:
+			longest_jumps["week"] = stat
+
+	return longest_jumps
 
 def get_shortest_jump(stats):
 	shortest = Longjump(1000, 1000.0, 1000, 1000.0, 1000, 1000.0, 1000, False, False)
@@ -161,12 +171,11 @@ if __name__ == "__main__":
 		print(f"No stats to analyze. Quitting.")
 		sys.exit(0)
 
-
 	start_time, end_time = get_timespan(all_stats)
 	active_hours = get_active_hours(all_stats)
 	active_days = get_active_days(all_stats)
 	jumps_over = get_jumps_over(all_stats)
-	longest_jump = get_longest_jump(all_stats)
+	longest_jumps = get_longest_jumps(all_stats)
 	shortest_jump = get_shortest_jump(all_stats)
 	average_distance = get_average_distance(all_stats)
 	common_distances = get_common_distances(all_stats)
@@ -191,7 +200,15 @@ if __name__ == "__main__":
 		print(f"{get_distance_color(int(jump_over))}{jump_over:>8}{COL_RESET}: {jumps_over[jump_over]:<4} | {percent}%")
 	print()
 
-	print(f"{COL_BOLD}longest jump{COL_RESET}:     {strstat(longest_jump)} ({format_timestamp(longest_jump.time)})")
+	print(f"{COL_BOLD}longest jumps{COL_RESET}:")
+	for longest_jump in longest_jumps:
+		# Time will default to zero if there's no matches, so if you haven't 
+		# hit a jump in a week we'll just not show a result
+		if longest_jumps[longest_jump].time == 0:
+			continue
+		print(f"{longest_jump:>8}: {strstat(longest_jumps[longest_jump])} ({format_timestamp(longest_jumps[longest_jump].time)})")
+	print()
+
 	print(f"{COL_BOLD}shortest jump{COL_RESET}:    {strstat(shortest_jump)} ({format_timestamp(shortest_jump.time)}){COL_RESET}")
 	print(f"{COL_BOLD}average distance{COL_RESET}: {get_distance_color(average_distance)}{round(average_distance, 3)} units{COL_RESET}")
 	print()
