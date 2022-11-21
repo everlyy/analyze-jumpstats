@@ -22,6 +22,9 @@ class Longjump:
 		self.crouch = crouch
 		self.min_forward = min_forward
 
+	def init_empty():
+		return Longjump(0, 0, 0, 0, 0, 0, 0, False, False)
+
 def get_distance_color(distance):
 	color = COL_RESET
 	if distance >= 265:
