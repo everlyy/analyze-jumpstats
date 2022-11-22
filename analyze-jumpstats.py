@@ -61,24 +61,18 @@ def strstat(stat):
 	return f"{get_distance_color(stat.distance)}{round(stat.distance, 3)} units ({stat.strafes} strafes | {stat.sync}% sync | {stat.pre} pre | {stat.max_vel} max){COL_RESET}"
 
 def get_longest_jumps(stats):
-	longest_jumps = { "all": Longjump.init_empty(), "month": Longjump.init_empty(), "week": Longjump.init_empty(), "day": Longjump.init_empty() }
-	time_month_ago = datetime.now() - timedelta(days=30)
-	time_week_ago = datetime.now() - timedelta(days=7)
-	time_day_ago = datetime.now() - timedelta(days=1)
+	longest_jumps = {
+		"all": { "jump": Longjump.init_empty(), "timediff": datetime.fromtimestamp(0) },
+		"month": { "jump": Longjump.init_empty(), "timediff": datetime.now() - timedelta(days=30) },
+		"week": { "jump": Longjump.init_empty(), "timediff": datetime.now() - timedelta(days=7) },
+		"day": { "jump": Longjump.init_empty(), "timediff": datetime.now() - timedelta(days=1) },
+	}
 
 	for stat in stats:
 		jump_time = datetime.fromtimestamp(stat.timestamp)
-		if stat.distance > longest_jumps["all"].distance:
-			longest_jumps["all"] = stat
-
-		if jump_time > time_month_ago and stat.distance > longest_jumps["month"].distance:
-			longest_jumps["month"] = stat
-
-		if jump_time > time_week_ago and stat.distance > longest_jumps["week"].distance:
-			longest_jumps["week"] = stat
-
-		if jump_time > time_day_ago and stat.distance > longest_jumps["day"].distance:
-			longest_jumps["day"] = stat
+		for longest_jump  in longest_jumps:
+			if jump_time > longest_jumps[longest_jump]["timediff"] and stat.distance > longest_jumps[longest_jump]["jump"].distance:
+				longest_jumps[longest_jump]["jump"] = stat
 
 	return longest_jumps
 
@@ -247,9 +241,9 @@ if __name__ == "__main__":
 	for longest_jump in longest_jumps:
 		# Time will default to zero if there's no matches, so if you haven't 
 		# hit a jump in a week we'll just not show a result
-		if longest_jumps[longest_jump].timestamp == 0:
+		if longest_jumps[longest_jump]["jump"].timestamp == 0:
 			continue
-		print(f"{longest_jump:>8}: {strstat(longest_jumps[longest_jump])} ({format_timestamp(longest_jumps[longest_jump].timestamp)})")
+		print(f"{longest_jump:>8}: {strstat(longest_jumps[longest_jump]['jump'])} ({format_timestamp(longest_jumps[longest_jump]['jump'].timestamp)})")
 	print()
 
 	print(f"{COL_BOLD}shortest jump{COL_RESET}:    {strstat(shortest_jump)} ({format_timestamp(shortest_jump.timestamp)}){COL_RESET}")
