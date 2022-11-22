@@ -61,19 +61,24 @@ def strstat(stat):
 	return f"{get_distance_color(stat.distance)}{round(stat.distance, 3)} units ({stat.strafes} strafes | {stat.sync}% sync | {stat.pre} pre | {stat.max_vel} max){COL_RESET}"
 
 def get_longest_jumps(stats):
-	longest_jumps = { "all": Longjump.init_empty(), "month": Longjump.init_empty(), "week": Longjump.init_empty() }
+	longest_jumps = { "all": Longjump.init_empty(), "month": Longjump.init_empty(), "week": Longjump.init_empty(), "day": Longjump.init_empty() }
 	time_month_ago = datetime.now() - timedelta(days=30)
 	time_week_ago = datetime.now() - timedelta(days=7)
+	time_day_ago = datetime.now() - timedelta(days=1)
 
 	for stat in stats:
+		jump_time = datetime.fromtimestamp(stat.timestamp)
 		if stat.distance > longest_jumps["all"].distance:
 			longest_jumps["all"] = stat
 
-		if datetime.fromtimestamp(stat.timestamp) > time_month_ago and stat.distance > longest_jumps["month"].distance:
+		if jump_time > time_month_ago and stat.distance > longest_jumps["month"].distance:
 			longest_jumps["month"] = stat
 
-		if datetime.fromtimestamp(stat.timestamp) > time_week_ago and stat.distance > longest_jumps["week"].distance:
+		if jump_time > time_week_ago and stat.distance > longest_jumps["week"].distance:
 			longest_jumps["week"] = stat
+
+		if jump_time > time_day_ago and stat.distance > longest_jumps["day"].distance:
+			longest_jumps["day"] = stat
 
 	return longest_jumps
 
