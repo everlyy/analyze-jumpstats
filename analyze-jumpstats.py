@@ -3,6 +3,7 @@ import argparse
 import csv
 import os
 import sys
+import time
 
 COL_RESET = "\033[0m"
 COL_BLUE = "\033[34m"
@@ -176,8 +177,6 @@ def merge_stat_files(stat_files):
 		for row in new_rows:
 			writer.writerow(row)
 
-	print(f"Merge complete.")
-
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-d", "--stats-directory", help="Choose different stats directory", dest="stats_directory")
@@ -192,8 +191,11 @@ if __name__ == "__main__":
 	stat_files = get_stat_files(stats_directory)
 
 	if args.merge:
+		merge_start = time.time()
 		print(f"Merging {len(stat_files)} files...")
 		merge_stat_files(stat_files)
+		merge_time = time.time() - merge_start
+		print(f"Completed merge in {round(merge_time * 1000, 2)}ms")
 		sys.exit(0)
 
 	all_stats = []
