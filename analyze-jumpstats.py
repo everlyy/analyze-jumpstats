@@ -1,8 +1,8 @@
+from datetime import datetime, timedelta
+import argparse
 import csv
 import os
 import sys
-import argparse
-from datetime import datetime, timedelta
 
 COL_RESET = "\033[0m"
 COL_BLUE = "\033[34m"
