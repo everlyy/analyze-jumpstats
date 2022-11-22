@@ -12,8 +12,8 @@ COL_GOLD = "\033[93m"
 COL_BOLD = "\033[1m"
 
 class Longjump:
-	def __init__(self, time, distance, strafes, pre, max_vel, height, sync, crouch, min_forward):
-		self.time = time
+	def __init__(self, timestamp, distance, strafes, pre, max_vel, height, sync, crouch, min_forward):
+		self.timestamp = timestamp
 		self.distance = distance
 		self.strafes = strafes
 		self.pre = pre
@@ -68,10 +68,10 @@ def get_longest_jumps(stats):
 		if stat.distance > longest_jumps["all"].distance:
 			longest_jumps["all"] = stat
 
-		if datetime.fromtimestamp(stat.time) > time_month_ago and stat.distance > longest_jumps["month"].distance:
+		if datetime.fromtimestamp(stat.timestamp) > time_month_ago and stat.distance > longest_jumps["month"].distance:
 			longest_jumps["month"] = stat
 
-		if datetime.fromtimestamp(stat.time) > time_week_ago and stat.distance > longest_jumps["week"].distance:
+		if datetime.fromtimestamp(stat.timestamp) > time_week_ago and stat.distance > longest_jumps["week"].distance:
 			longest_jumps["week"] = stat
 
 	return longest_jumps
@@ -113,10 +113,10 @@ def get_timespan(stats):
 	start_time = 2147483648
 	end_time = 0
 	for stat in stats:
-		if stat.time > end_time:
-			end_time = stat.time
-		if stat.time < start_time:
-			start_time = stat.time
+		if stat.timestamp > end_time:
+			end_time = stat.timestamp
+		if stat.timestamp < start_time:
+			start_time = stat.timestamp
 	return start_time, end_time
 
 def get_jumps_over(stats):
@@ -135,9 +135,9 @@ def get_jumps_over(stats):
 def get_active_hours(stats):
 	active_hours = {}
 	for stat in stats:
-		#                                                I blame windows for this shit
-		#                                                             V
-		hour = datetime.fromtimestamp(stat.time).strftime("%I %p").lstrip("0")
+		#                                                     I blame windows for this shit
+		#                                                                  V
+		hour = datetime.fromtimestamp(stat.timestamp).strftime("%I %p").lstrip("0")
 		if hour in active_hours:
 			active_hours[hour] += 1
 		else:
@@ -147,7 +147,7 @@ def get_active_hours(stats):
 def get_active_days(stats):
 	active_days = {}
 	for stat in stats:
-		day = datetime.fromtimestamp(stat.time).strftime("%a").lower()
+		day = datetime.fromtimestamp(stat.timestamp).strftime("%a").lower()
 		if day in active_days:
 			active_days[day] += 1
 		else:
@@ -241,12 +241,12 @@ if __name__ == "__main__":
 	for longest_jump in longest_jumps:
 		# Time will default to zero if there's no matches, so if you haven't 
 		# hit a jump in a week we'll just not show a result
-		if longest_jumps[longest_jump].time == 0:
+		if longest_jumps[longest_jump].timestamp == 0:
 			continue
-		print(f"{longest_jump:>8}: {strstat(longest_jumps[longest_jump])} ({format_timestamp(longest_jumps[longest_jump].time)})")
+		print(f"{longest_jump:>8}: {strstat(longest_jumps[longest_jump])} ({format_timestamp(longest_jumps[longest_jump].timestamp)})")
 	print()
 
-	print(f"{COL_BOLD}shortest jump{COL_RESET}:    {strstat(shortest_jump)} ({format_timestamp(shortest_jump.time)}){COL_RESET}")
+	print(f"{COL_BOLD}shortest jump{COL_RESET}:    {strstat(shortest_jump)} ({format_timestamp(shortest_jump.timestamp)}){COL_RESET}")
 	print(f"{COL_BOLD}average distance{COL_RESET}: {get_distance_color(average_distance)}{round(average_distance, 3)} units{COL_RESET}")
 	print()
 
