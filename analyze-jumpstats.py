@@ -178,6 +178,8 @@ def merge_stat_files(stat_files):
 			writer.writerow(row)
 
 if __name__ == "__main__":
+	global_start_time = time.time()
+
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-d", "--stats-directory", help="Choose different stats directory", dest="stats_directory")
 	parser.add_argument("-m", "--merge", help="Merge all stat files into one", action="store_true", dest="merge")
@@ -198,13 +200,15 @@ if __name__ == "__main__":
 		print(f"Completed merge in {round(merge_time * 1000, 2)}ms")
 		sys.exit(0)
 
+	read_stats_start = time.time()
 	all_stats = []
 	for stat_file in stat_files:
 		with open(stat_file, "r") as file:
 			stats = read_stats(file)
 			for stat in stats:
 				all_stats.append(stat)
-	print(f"Got {len(all_stats)} stat(s) from {len(stat_files)} file(s)")
+	read_stats_time = time.time() - read_stats_start
+	print(f"Got {len(all_stats)} stat(s) from {len(stat_files)} file(s) in {round(read_stats_time * 1000, 2)}ms")
 
 	if len(all_stats) < 1:
 		print(f"No stats to analyze. Quitting.")
@@ -260,3 +264,7 @@ if __name__ == "__main__":
 	print(f"{COL_BOLD}most common number of strafes{COL_RESET}:")
 	for strafes in common_strafes[0:5]:
 		print(f"{strafes[0]:>8}: {strafes[1]}")
+	print()
+
+	global_time = time.time() - global_start_time
+	print(f"Completed in {round(global_time * 1000, 2)}ms")
