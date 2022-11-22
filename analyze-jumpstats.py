@@ -128,14 +128,9 @@ def get_timespan(stats):
 def get_jumps_over(stats):
 	jumps_over = {"265": 0, "270": 0, "275": 0, "285": 0}
 	for stat in stats:
-		if stat.distance > 285:
-			jumps_over["285"] += 1
-		if stat.distance > 275:
-			jumps_over["275"] += 1
-		if stat.distance > 270:
-			jumps_over["270"] += 1
-		if stat.distance > 265:
-			jumps_over["265"] += 1
+		for distance in jumps_over:
+			if stat.distance > int(distance):
+				jumps_over[distance] += 1
 	return jumps_over
 
 def get_active_hours(stats):
