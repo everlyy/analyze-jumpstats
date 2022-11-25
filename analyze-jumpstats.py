@@ -5,14 +5,9 @@ import os
 import sys
 import time
 
-COL_RESET = "\033[0m"
-COL_BLUE = "\033[34m"
-COL_GREEN = "\033[32m"
-COL_RED = "\033[31m"
-COL_GOLD = "\033[93m"
-COL_BOLD = "\033[1m"
+LJSTAT_ENTRY_COUNT = 9
 
-class Longjump:
+class LJStat:
 	def __init__(self, timestamp, distance, strafes, pre, max_vel, height, sync, crouch, min_forward):
 		self.timestamp = timestamp
 		self.distance = distance
@@ -24,241 +19,282 @@ class Longjump:
 		self.crouch = crouch
 		self.min_forward = min_forward
 
-	def init_empty():
-		return Longjump(0, 0, 0, 0, 0, 0, 0, False, False)
+	def init_from_csv_row(row):
+		if len(row) != LJSTAT_ENTRY_COUNT:
+			raise Exception(f"CSV row doesn't have {LJSTAT_ENTRY_COUNT} entries.")
 
-def get_distance_color(distance):
-	color = COL_RESET
-	if distance >= 265:
-		color = COL_BLUE
-	if distance >= 270:
-		color = COL_GREEN
-	if distance >= 275:
-		color = COL_RED
-	if distance >= 285:
-		color = COL_GOLD
-	return color
-
-def get_stat_files(directory):
-	stat_files = []
-	for root, dirs, files in os.walk(directory):
-		for file in files:
-			if file.endswith(".csv"):
-				stat_files.append(os.path.join(root, file))
-
-	return stat_files
-
-def read_stats(fp):
-	stats = []
-	reader = csv.reader(fp)
-	next(reader)
-	for row in reader:
 		time, distance, strafes, pre, max_vel, height, sync, crouch, min_forward = row
-		stats.append(Longjump(int(time), float(distance), int(strafes), float(pre), int(max_vel), float(height), int(sync), crouch == "yes", min_forward == "yes"))
-	return stats
+		return LJStat(
+			int(time), 
+			float(distance), 
+			int(strafes), 
+			float(pre), 
+			int(max_vel), 
+			float(height), 
+			int(sync), 
+			crouch == "yes", 
+			min_forward == "yes"
+		)
 
-def strstat(stat):
-	return f"{get_distance_color(stat.distance)}{round(stat.distance, 3)} units ({stat.strafes} strafes | {stat.sync}% sync | {stat.pre} pre | {stat.max_vel} max){COL_RESET}"
+	def init_empty():
+		return LJStat(0, 0.0, 0, 0.0, 0, 0.0, 0, False, False)
 
-def get_longest_jumps(stats):
-	longest_jumps = {
-		"all": { "jump": Longjump.init_empty(), "timediff": datetime.fromtimestamp(0) },
-		"month": { "jump": Longjump.init_empty(), "timediff": datetime.now() - timedelta(days=30) },
-		"week": { "jump": Longjump.init_empty(), "timediff": datetime.now() - timedelta(days=7) },
-		"day": { "jump": Longjump.init_empty(), "timediff": datetime.now() - timedelta(days=1) },
+	def __str__(self):
+		return f"{round(self.distance, 3)} units ({self.strafes} strafes | {self.sync}% sync | {self.pre} pre | {self.max_vel} max)"
+
+class Color:
+	RESET = "\033[0m"
+	BOLD = "\033[1m"
+
+	BLUE = "\033[34m"
+	GREEN = "\033[32m"
+	RED = "\033[31m"
+	GOLD = "\033[93m"
+
+def color_for_distance(lj_dist):
+	color_map = {
+		285: Color.GOLD,
+		275: Color.RED,
+		270: Color.GREEN,
+		265: Color.BLUE
 	}
 
-	for stat in stats:
+	for col_dist in color_map:
+		if lj_dist >= col_dist:
+			return color_map[col_dist]
+	return Color.RESET
+
+def get_files_in_directory(directory, filetype):
+	files_in_directory = []
+	for root, dirs, files in os.walk(directory):
+		for file in files:
+			if file.endswith(filetype):
+				files_in_directory.append(os.path.join(root, file))
+	return files_in_directory
+
+def read_stats_from_file(filename):
+	stats = []
+	with open(filename, "r") as file:
+		reader = csv.reader(file)
+		next(reader) # Skip the header
+		for row in reader:
+			try:
+				stat = LJStat.init_from_csv_row(row)
+				stats.append(stat)
+			except Exception as e:
+				print(f"Error while reading {filename}: {e}")
+	return stats
+
+class StatAnalytics:
+	def __init__(self):
+		self.timespan = { "start": 2147483648, "end": 0 }
+
+		self.longest_jumps_per_timediff = {
+			"all":   { "jump": LJStat.init_empty(), "timediff": datetime.fromtimestamp(0) },
+			"month": { "jump": LJStat.init_empty(), "timediff": datetime.now() - timedelta(days=30) },
+			"week":  { "jump": LJStat.init_empty(), "timediff": datetime.now() - timedelta(days=7) },
+			"day":   { "jump": LJStat.init_empty(), "timediff": datetime.now() - timedelta(days=1) },
+		}
+
+		self.shortest_jump = LJStat.init_empty()
+		self.shortest_jump.distance = 10000.0
+
+		self.__total_distance = 0.0
+		self.average_distance = 0.0
+
+		self.common_distances = {}
+
+		self.common_strafes = {}
+
+		self.jumps_over = { 265: 0, 270: 0, 275: 0, 285: 0 }
+
+		self.active_hours = {}
+
+		self.active_days = {}
+
+	def __timespan_from_stat(self, stat):
+		if stat.timestamp < self.timespan["start"]:
+			self.timespan["start"] = stat.timestamp
+		if stat.timestamp > self.timespan["end"]:
+			self.timespan["end"] = stat.timestamp
+
+	def __longest_jumps_per_timediff_from_stat(self, stat):
 		jump_time = datetime.fromtimestamp(stat.timestamp)
-		for longest_jump  in longest_jumps:
-			if jump_time > longest_jumps[longest_jump]["timediff"] and stat.distance > longest_jumps[longest_jump]["jump"].distance:
-				longest_jumps[longest_jump]["jump"] = stat
+		for longest_jump_per_timediff in self.longest_jumps_per_timediff:
+			ljtd = self.longest_jumps_per_timediff[longest_jump_per_timediff]
 
-	return longest_jumps
+			if jump_time > ljtd["timediff"] and stat.distance > ljtd["jump"].distance:
+				ljtd["jump"] = stat
 
-def get_shortest_jump(stats):
-	shortest = Longjump(1000, 1000.0, 1000, 1000.0, 1000, 1000.0, 1000, False, False)
-	for stat in stats:
-		if stat.distance < shortest.distance:
-			shortest = stat
-	return shortest
+	def __shortest_jump_from_stat(self, stat):
+		if stat.distance < self.shortest_jump.distance:
+			self.shortest_jump = stat
 
-def get_average_distance(stats):
-	total_distance = 0.00
-	for stat in stats:
-		total_distance += stat.distance
-	return total_distance / len(stats)
-
-def get_common_distances(stats):
-	distances = {}
-	for stat in stats:
+	def __common_distances_from_stat(self, stat):
 		key = int(stat.distance)
-		if key in distances:
-			distances[key] += 1
+		if key in self.common_distances:
+			self.common_distances[key] += 1
 		else:
-			distances[key] = 1
-	return list(reversed(sorted(distances.items(), key=lambda x:x[1])))
+			self.common_distances[key] = 1
 
-def get_common_strafes(stats):
-	strafes = {}
-	for stat in stats:
+	def __common_strafes_from_stat(self, stat):
 		key = int(stat.strafes)
-		if key in strafes:
-			strafes[key] += 1
+		if key in self.common_strafes:
+			self.common_strafes[key] += 1
 		else:
-			strafes[key] = 1
-	return list(reversed(sorted(strafes.items(), key=lambda x:x[1])))
+			self.common_strafes[key] = 1
 
-def get_timespan(stats):
-	start_time = 2147483648
-	end_time = 0
-	for stat in stats:
-		if stat.timestamp > end_time:
-			end_time = stat.timestamp
-		if stat.timestamp < start_time:
-			start_time = stat.timestamp
-	return start_time, end_time
+	def __jumps_over_from_stat(self, stat):
+		for dist in self.jumps_over:
+			if stat.distance > dist:
+				self.jumps_over[dist] += 1
 
-def get_jumps_over(stats):
-	jumps_over = {"265": 0, "270": 0, "275": 0, "285": 0}
-	for stat in stats:
-		for distance in jumps_over:
-			if stat.distance > int(distance):
-				jumps_over[distance] += 1
-	return jumps_over
-
-def get_active_hours(stats):
-	active_hours = {}
-	for stat in stats:
-		#                                                     I blame windows for this shit
-		#                                                                  V
+	def __active_hours_from_stat(self, stat):
+		# Has to be stripped because Windows doesn't support `%-I`
 		hour = datetime.fromtimestamp(stat.timestamp).strftime("%I %p").lstrip("0")
-		if hour in active_hours:
-			active_hours[hour] += 1
+		if hour in self.active_hours:
+			self.active_hours[hour] += 1
 		else:
-			active_hours[hour] = 1
-	return list(reversed(sorted(active_hours.items(), key=lambda x:x[1])))
+			self.active_hours[hour] = 1
 
-def get_active_days(stats):
-	active_days = {}
-	for stat in stats:
+	def __active_days_from_stat(self, stat):
 		day = datetime.fromtimestamp(stat.timestamp).strftime("%a").lower()
-		if day in active_days:
-			active_days[day] += 1
+		if day in self.active_days:
+			self.active_days[day] += 1
 		else:
-			active_days[day] = 1
-	return list(reversed(sorted(active_days.items(), key=lambda x:x[1])))
+			self.active_days[day] = 1
 
-def format_timestamp(timestamp):
+	def analytics_from_list(self, stats):
+		for stat in stats:
+			self.__timespan_from_stat(stat)
+			self.__longest_jumps_per_timediff_from_stat(stat)
+			self.__shortest_jump_from_stat(stat)
+			self.__common_distances_from_stat(stat)
+			self.__common_strafes_from_stat(stat)
+			self.__jumps_over_from_stat(stat)
+			self.__active_hours_from_stat(stat)
+			self.__active_days_from_stat(stat)
+
+			self.__total_distance += stat.distance
+
+		self.average_distance = self.__total_distance / len(stats);
+
+		# Finalize some values by sorting them
+		self.common_distances = list(reversed(sorted(self.common_distances.items(), key=lambda x:x[1])))
+		self.common_strafes = list(reversed(sorted(self.common_strafes.items(), key=lambda x:x[1])))
+		self.active_days = list(reversed(sorted(self.active_days.items(), key=lambda x:x[1])))
+		self.active_hours = list(reversed(sorted(self.active_hours.items(), key=lambda x:x[1])))
+
+def fmttime(timestamp):
 	return datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M:%S")
 
-def merge_stat_files(stat_files):
-	fields = ["time", "distance", "strafes", "pre", "max", "height", "sync", "crouchjump", "-forward"]
-	new_rows = []
-	for stat_file in stat_files:
-		with open(stat_file, "r") as file:
-			reader = csv.reader(file)
-			next(reader)
-			for row in reader:
-				new_rows.append(row)
+def merge_stat_files(stats_directory, merged_file):
+	merge_start_time = time.time()
 
-	print(f"Read {len(new_rows)} rows from {len(stat_files)} files.")
-	print(f"Merging all into one file...")
+	header = [ "time", "distance", "strafes", "pre", "max", "height", "sync", "crouchjump", "-forward" ]
 
-	with open("merged.csv", "w", newline='', encoding='utf-8') as file:
-		writer = csv.writer(file)
-		writer.writerow(fields)
-		for row in new_rows:
-			writer.writerow(row)
+	print(f"Merging all files in {Color.BOLD}{stats_directory}{Color.RESET} to {Color.BOLD}{merged_file}{Color.RESET}...")
+	files = get_files_in_directory(stats_directory, ".csv")
+
+	with open(merged_file, "w", newline="", encoding="utf-8") as outfile:
+		writer = csv.writer(outfile)
+		writer.writerow(header)
+
+		for file in files:
+			with open(file, "r") as infile:
+				count = 0
+				reader = csv.reader(infile)
+				next(reader) # Skip header
+				for row in reader:
+					count += 1
+					if len(row) != LJSTAT_ENTRY_COUNT:
+						print(f"WARNING: Not adding line {count + 1} to merged file because it does not have {LJSTAT_ENTRY_COUNT} entries.")
+						continue
+					writer.writerow(row)
+
+				print(f"Moved {Color.BOLD}{count}{Color.RESET} rows from {Color.BOLD}{file}{Color.RESET} to {Color.BOLD}{merged_file}{Color.RESET}")
+
+	merge_time = time.time() - merge_start_time
+	print(f"Merge completed in {Color.BOLD}{round(merge_time * 1000, 2)}ms{Color.RESET}")
 
 if __name__ == "__main__":
 	global_start_time = time.time()
+	stats_directory = "stats/"
 
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-d", "--stats-directory", help="Choose different stats directory", dest="stats_directory")
-	parser.add_argument("-m", "--merge", help="Merge all stat files into one", action="store_true", dest="merge")
+	parser.add_argument("-d", "--stats-directory", help="Choose a different stats directory", dest="stats_directory")
+	parser.add_argument("-m", "--merge", help="Merge all the files from the stats directory into one", dest="merged_file")
 	args = parser.parse_args()
 
-	stats_directory = "stats/"
 	if args.stats_directory is not None:
 		stats_directory = args.stats_directory
 
+	if args.merged_file is not None:
+		merge_stat_files(stats_directory, args.merged_file)
+		sys.exit(0)
+
 	print(f"Collecting stats...")
-	stat_files = get_stat_files(stats_directory)
-
-	if args.merge:
-		merge_start = time.time()
-		print(f"Merging {len(stat_files)} files...")
-		merge_stat_files(stat_files)
-		merge_time = time.time() - merge_start
-		print(f"Completed merge in {round(merge_time * 1000, 2)}ms")
-		sys.exit(0)
-
-	read_stats_start = time.time()
-	all_stats = []
-	for stat_file in stat_files:
-		with open(stat_file, "r") as file:
-			stats = read_stats(file)
-			for stat in stats:
-				all_stats.append(stat)
-	read_stats_time = time.time() - read_stats_start
-	print(f"Got {len(all_stats)} stat(s) from {len(stat_files)} file(s) in {round(read_stats_time * 1000, 2)}ms")
-
-	if len(all_stats) < 1:
-		print(f"No stats to analyze. Quitting.")
-		sys.exit(0)
-
-	start_time, end_time = get_timespan(all_stats)
-	active_hours = get_active_hours(all_stats)
-	active_days = get_active_days(all_stats)
-	jumps_over = get_jumps_over(all_stats)
-	longest_jumps = get_longest_jumps(all_stats)
-	shortest_jump = get_shortest_jump(all_stats)
-	average_distance = get_average_distance(all_stats)
-	common_distances = get_common_distances(all_stats)
-	common_strafes = get_common_strafes(all_stats)
-
-	print(f"Jumpstats from {COL_BOLD}{format_timestamp(start_time)}{COL_RESET} to {COL_BOLD}{format_timestamp(end_time)}{COL_RESET}")
+	collect_stats_start_time = time.time()
+	files = get_files_in_directory(stats_directory, ".csv")
+	stats = []
+	for file in files:
+		stats.extend(read_stats_from_file(file))
+	collect_stats_time = time.time() - collect_stats_start_time
+	print(f"Collected {Color.BOLD}{len(stats)} stat(s){Color.RESET} from {Color.BOLD}{len(files)} file(s){Color.RESET} in {Color.BOLD}{round(collect_stats_time * 1000, 2)}ms{Color.RESET}")
 	print()
 
-	print(f"{COL_BOLD}active hours{COL_RESET}:")
-	for active_hour in active_hours[0:5]:
-		print(f"{active_hour[0]:>8}: {active_hour[1]} jumps")
+	print("Calculating analytics...")
+	analytics_start_time = time.time()
+	analytics = StatAnalytics()
+	analytics.analytics_from_list(stats)
+	analytics_time = time.time() - analytics_start_time
+	print(f"Calculated analytics in {Color.BOLD}{round(analytics_time * 1000, 2)}ms{Color.RESET}")
 	print()
 
-	print(f"{COL_BOLD}active days{COL_RESET}:")
-	for active_day in active_days[0:5]:
+	print(f"Jumpstats from {Color.BOLD}{fmttime(analytics.timespan['start'])}{Color.RESET} to {Color.BOLD}{fmttime(analytics.timespan['end'])}{Color.RESET}")
+	print()
+
+	print(f"{Color.BOLD}most active days{Color.RESET}:")
+	for active_day in analytics.active_days[0:3]:
 		print(f"{active_day[0]:>8}: {active_day[1]} jumps")
 	print()
 
-	print(f"{COL_BOLD}jumps over{COL_RESET}:")
-	for jump_over in jumps_over:
-		percent = round((jumps_over[jump_over] / len(all_stats)) * 100, 2)
-		print(f"{get_distance_color(int(jump_over))}{jump_over:>8}{COL_RESET}: {jumps_over[jump_over]:<4} | {percent}%")
+	print(f"{Color.BOLD}most active hours{Color.RESET}:")
+	for active_hour in analytics.active_hours[0:3]:
+		print(f"{active_hour[0]:>8}: {active_hour[1]} jumps")
 	print()
 
-	print(f"{COL_BOLD}longest jumps{COL_RESET}:")
-	for longest_jump in longest_jumps:
-		# Time will default to zero if there's no matches, so if you haven't 
-		# hit a jump in a week we'll just not show a result
-		if longest_jumps[longest_jump]["jump"].timestamp == 0:
+	print(f"{Color.BOLD}longest jumps{Color.RESET}:")
+	previous = None
+	for timediff in analytics.longest_jumps_per_timediff:
+		longest_jump = analytics.longest_jumps_per_timediff[timediff]
+
+		if longest_jump["jump"].timestamp == 0 or longest_jump['jump'] == previous:
 			continue
-		print(f"{longest_jump:>8}: {strstat(longest_jumps[longest_jump]['jump'])} ({format_timestamp(longest_jumps[longest_jump]['jump'].timestamp)})")
+
+		print(f"{timediff:>8}: {color_for_distance(longest_jump['jump'].distance)}{longest_jump['jump']}{Color.RESET} {fmttime(longest_jump['jump'].timestamp)}")
+		previous = longest_jump['jump']
 	print()
 
-	print(f"{COL_BOLD}shortest jump{COL_RESET}:    {strstat(shortest_jump)} ({format_timestamp(shortest_jump.timestamp)}){COL_RESET}")
-	print(f"{COL_BOLD}average distance{COL_RESET}: {get_distance_color(average_distance)}{round(average_distance, 3)} units{COL_RESET}")
+	print(f"{Color.BOLD}jumps over{Color.RESET}:")
+	for dist in analytics.jumps_over:
+		percent = round((analytics.jumps_over[dist] / len(stats)) * 100, 2)
+		print(f"{color_for_distance(dist)}{dist:>8}{Color.RESET}: {analytics.jumps_over[dist]:<4} | {percent}%")
 	print()
 
-	print(f"{COL_BOLD}most common distances jumped{COL_RESET}:")
-	for dist in common_distances[0:5]:
-		print(f"{get_distance_color(dist[0])}{dist[0]:>8}{COL_RESET}: {dist[1]}")
-	
+	print(f"{Color.BOLD}shortest jump{Color.RESET}:    {color_for_distance(analytics.shortest_jump.distance)}{analytics.shortest_jump}{Color.RESET}")
+	print(f"{Color.BOLD}average distance{Color.RESET}: {color_for_distance(analytics.average_distance)}{round(analytics.average_distance, 3)} units{Color.RESET}")
 	print()
-	print(f"{COL_BOLD}most common number of strafes{COL_RESET}:")
-	for strafes in common_strafes[0:5]:
-		print(f"{strafes[0]:>8}: {strafes[1]}")
+
+	print(f"{Color.BOLD}most common distances jumped{Color.RESET}:")
+	for common_distance in analytics.common_distances[0:5]:
+		print(f"{color_for_distance(common_distance[0])}{common_distance[0]:>8}{Color.RESET}: {common_distance[1]}")
+	print()
+
+	print(f"{Color.BOLD}most common number of strafes{Color.RESET}:")
+	for common_strafe in analytics.common_strafes[0:5]:
+		print(f"{common_strafe[0]:>8}: {common_strafe[1]}")
 	print()
 
 	global_time = time.time() - global_start_time
-	print(f"Completed in {round(global_time * 1000, 2)}ms")
+	print(f"Done in {Color.BOLD}{round(global_time * 1000, 2)}ms{Color.RESET}")
