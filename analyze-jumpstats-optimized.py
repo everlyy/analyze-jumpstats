@@ -188,9 +188,50 @@ class StatAnalytics:
 def fmttime(timestamp):
 	return datetime.fromtimestamp(timestamp).strftime("%d/%m/%Y %H:%M:%S")
 
+def merge_stat_files(stats_directory, merged_file):
+	merge_start_time = time.time()
+
+	header = [ "time", "distance", "strafes", "pre", "max", "height", "sync", "crouchjump", "-forward" ]
+
+	print(f"Merging all files in {Color.BOLD}{stats_directory}{Color.RESET} to {Color.BOLD}{merged_file}{Color.RESET}...")
+	files = get_files_in_directory(stats_directory, ".csv")
+
+	with open(merged_file, "w", newline="", encoding="utf-8") as outfile:
+		writer = csv.writer(outfile)
+		writer.writerow(header)
+
+		for file in files:
+			with open(file, "r") as infile:
+				count = 0
+				reader = csv.reader(infile)
+				next(reader) # Skip header
+				for row in reader:
+					count += 1
+					if len(row) != LJSTAT_ENTRY_COUNT:
+						print(f"WARNING: Not adding line {count + 1} to merged file because it does not have {LJSTAT_ENTRY_COUNT} entries.")
+						continue
+					writer.writerow(row)
+
+				print(f"Moved {Color.BOLD}{count}{Color.RESET} rows from {Color.BOLD}{file}{Color.RESET} to {Color.BOLD}{merged_file}{Color.RESET}")
+
+	merge_time = time.time() - merge_start_time
+	print(f"Merge completed in {Color.BOLD}{round(merge_time * 1000, 2)}ms{Color.RESET}")
+
 if __name__ == "__main__":
 	global_start_time = time.time()
 	stats_directory = "stats/"
+
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-d", "--stats-directory", help="Choose a different stats directory", dest="stats_directory")
+	parser.add_argument("-m", "--merge", help="Merge all the files from the stats directory into one", dest="merged_file")
+	args = parser.parse_args()
+
+	if args.stats_directory is not None:
+		stats_directory = args.stats_directory
+
+	if args.merged_file is not None:
+		merge_stat_files(stats_directory, args.merged_file)
+		sys.exit(0)
 
 	print(f"Collecting stats...")
 	collect_stats_start_time = time.time()
