@@ -5,6 +5,8 @@ import os
 import sys
 import time
 
+LJSTAT_ENTRY_COUNT = 9
+
 class LJStat:
 	def __init__(self, timestamp, distance, strafes, pre, max_vel, height, sync, crouch, min_forward):
 		self.timestamp = timestamp
@@ -18,8 +20,8 @@ class LJStat:
 		self.min_forward = min_forward
 
 	def init_from_csv_row(row):
-		if len(row) != 9:
-			raise Exception("CSV row doesn't have 9 entries.")
+		if len(row) != LJSTAT_ENTRY_COUNT:
+			raise Exception(f"CSV row doesn't have {LJSTAT_ENTRY_COUNT} entries.")
 
 		time, distance, strafes, pre, max_vel, height, sync, crouch, min_forward = row
 		return LJStat(
