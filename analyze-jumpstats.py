@@ -265,15 +265,13 @@ if __name__ == "__main__":
 	print()
 
 	print(f"{Color.BOLD}longest jumps{Color.RESET}:")
-	previous = None
 	for timediff in analytics.longest_jumps_per_timediff:
 		longest_jump = analytics.longest_jumps_per_timediff[timediff]
 
-		if longest_jump["jump"].timestamp == 0 or longest_jump['jump'] == previous:
+		if longest_jump["jump"].timestamp == 0:
 			continue
 
 		print(f"{timediff:>8}: {color_for_distance(longest_jump['jump'].distance)}{longest_jump['jump']}{Color.RESET} {fmttime(longest_jump['jump'].timestamp)}")
-		previous = longest_jump['jump']
 	print()
 
 	print(f"{Color.BOLD}jumps over{Color.RESET}:")
