@@ -277,7 +277,7 @@ if __name__ == "__main__":
 	print(f"{Color.BOLD}jumps over{Color.RESET}:")
 	for dist in analytics.jumps_over:
 		percent = round((analytics.jumps_over[dist] / len(stats)) * 100, 2)
-		print(f"{color_for_distance(dist)}{dist:>8}{Color.RESET}: {analytics.jumps_over[dist]:<4} | {percent}%")
+		print(f"{color_for_distance(dist)}{dist:>8}{Color.RESET}: {analytics.jumps_over[dist]:<6} | {percent}%")
 	print()
 
 	print(f"{Color.BOLD}shortest jump{Color.RESET}:    {color_for_distance(analytics.shortest_jump.distance)}{analytics.shortest_jump}{Color.RESET}")
